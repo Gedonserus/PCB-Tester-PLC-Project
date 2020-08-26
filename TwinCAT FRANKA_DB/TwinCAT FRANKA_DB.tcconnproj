@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{a434e9ab-165b-4cab-8787-3ebacc1c4515}</ProjectGuid>
+    <AssemblyName>TwinCAT FRANKA_DB</AssemblyName>
+    <Name>TwinCAT FRANKA_DB</Name>
+    <RootNamespace>TwinCAT FRANKA_DB</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="TcDbServer.tcdbsrv">
+      <SubType>Content</SubType>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <tcdbsrvdbCompile Include="TcDbServer\DB\DB.tcdbsrvdb">
+      <DependentUpon>TcDbServer.tcdbsrv</DependentUpon>
+    </tcdbsrvdbCompile>
+  </ItemGroup>
+  <!-- This next bit is required unless the macro used to Import your targets is defined in an MSBuild toolset. -->
+  <ProjectExtensions>
+    <ProjectCapabilities>
+      <ProjectConfigurationsDeclaredAsItems />
+      <TcConnectivity />
+    </ProjectCapabilities>
+  </ProjectExtensions>
+</Project>

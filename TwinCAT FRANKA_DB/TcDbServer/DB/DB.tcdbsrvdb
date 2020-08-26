@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<Database>
+  <ID>1</ID>
+  <Name>DB</Name>
+  <ServerName>C:\Users\Administrator\Desktop\FRANKA1.mdb</ServerName>
+  <DatabaseName />
+  <TableName />
+  <Authentication>False</Authentication>
+  <UserID />
+  <Password>UjztPioDjB0=</Password>
+  <Driver />
+  <Provider>Microsoft.Jet.OLEDB.4.0</Provider>
+  <Port>0</Port>
+  <Protocol />
+  <Scheme />
+  <Sequence />
+  <SystemDB />
+  <FireBird_ClientDLLPath />
+  <OLDASCIIFormat>False</OLDASCIIFormat>
+  <ASCIISeparator />
+  <DBValueType>NONE</DBValueType>
+  <DBType>MS_Access</DBType>
+  <OdbcSubType>Unknown</OdbcSubType>
+  <Temporary>False</Temporary>
+  <Disabled>False</Disabled>
+  <Description />
+  <FailOverDBID>2</FailOverDBID>
+  <AdditionalParameter />
+  <AuthenticationMechanism>None</AuthenticationMechanism>
+  <SslCa />
+  <SslCertificateFilePath />
+  <SslCertificatePassword>UjztPioDjB0=</SslCertificatePassword>
+</Database>

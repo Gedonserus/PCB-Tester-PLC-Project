@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="DB_Columns" Id="{bab4559f-2311-4c45-ad66-eb28ef3d38d1}">
+    <Declaration><![CDATA[TYPE DB_Columns :
+STRUCT
+	PCB_Batch_ID: INT;
+	PCB_ID: 		INT;
+	Measurement_ID: INT;
+	TimeStamp: 		DT;
+	FreeFromDefects: STRING(50);
+	Measure_Type: STRING(50);
+	Measure_Result: REAL;
+	Measure_Reference: REAL;
+	Measure_Tolerance: REAL;	
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="ST_Table" Id="{6bdf5994-3478-4d86-aab6-df9f94f28179}">
+    <Declaration><![CDATA[TYPE ST_Table :
+STRUCT
+sName: STRING(50);
+sProperty: STRING;
+nLength: UDINT;
+eType: E_ColumnType;
+END_STRUCT
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

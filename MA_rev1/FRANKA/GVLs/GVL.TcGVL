@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <GVL Name="GVL" Id="{e35d6ea1-e798-4dab-8e72-697235dd85fe}">
+    <Declaration><![CDATA[ {attribute 'qualified_only'}
+VAR_GLOBAL
+//Preset before program
+	pcb_n			: INT;
+	measure_n 		: INT;
+	pcb_max			: INT;
+	measure_max		: INT;
+
+// MS Access Table Setting	
+	ActiveTable		: STRING;
+	
+	
+// fill during program
+    Data: DB_Columns; // Data for MS Access Database
+	PLC_Data: ARRAY [1..8] OF PLC_Data;// Data Saved in PLC
+	Visu_Data: ARRAY [1..8] OF Visu_Data; // Visu Data
+	
+
+// DB_Writting
+	Writing_finished: BOOL;
+	write_state: INT;
+	
+// I/O Configuration
+	
+	LED1	AT%Q*:	BOOL;
+	LED2	AT%Q*:	BOOL;
+	LED3	AT%Q*:	BOOL;
+	LED4	AT%Q*:	BOOL;
+	LED5	AT%Q*:	BOOL;
+	LED6	AT%Q*:	BOOL;
+	LED7	AT%Q*:	BOOL;
+	LED8	AT%Q*:	BOOL;
+	
+	Schalterlichtrot 	AT%Q*:	BOOL;
+	Schalterlichtweis 	AT%Q*:	BOOL;
+	Schalterlichtgrun 	AT%Q*:	BOOL;
+	schalterspannung 	AT%Q*:	BOOL;
+	
+	Start_Schalter	AT%I*:	BOOL;
+	Stop_Schalter	AT%I*:	BOOL;
+	Grau_Schalter	AT%I*:	BOOL;
+	
+// Modbus Variabeln
+	mb_Input_Coils      : ARRAY [0..255] OF BOOL;
+	mb_Output_Coils     : ARRAY [0..255] OF BOOL;
+	mb_Input_Registers  : ARRAY [0..255] OF WORD;
+	mb_Output_Registers : ARRAY [0..255] OF WORD;
+
+// Variables Measurement
+	
+sMeas_type	:	STRING;	// Measurement type first define measurement type then start
+						// CSQ | CSD | CSR | CPQ | CPD | CPR | CPG | LSQ |LSD | LSR |
+						// LPQ | LPD | LPR | LPG | ZTH | YTH | RX | GB | DCR |
+bMeas_start	:	BOOL;	// start mearuement
+rMeas_01	: 	REAL;	// Measurement result 1
+rMeas_02	: 	REAL;	// Measurement result 2
+bMeas_ready	:	BOOL;	// Measurement finished
+bMeas_error	:	BOOL;	// Error flag
+sMeas_errormsg:	STRING;	// Error Message String
+bkill_proc	:	BOOL;	// Terminate Python Script
+
+// Blocky start
+
+        bStartBlockly 	: BOOL 		:= TRUE;
+		sDeskUsername	: STRING 	:='Benjamin';
+		sDeskPassword	: STRING	:='Benjamin';
+
+// Init Measurement settings
+Measurement_Init : BOOL;
+
+
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

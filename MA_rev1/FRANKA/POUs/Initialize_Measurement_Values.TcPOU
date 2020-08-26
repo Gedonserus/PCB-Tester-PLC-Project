@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="Initialize_Measurement_Values" Id="{3a933f0f-d742-4163-8291-2877737c9b10}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM Initialize_Measurement_Values
+VAR
+	n : INT:=1;
+	c : INT;
+
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// Setting PCB
+// Measurement Types 
+// CSQ | CSD | CSR | CPQ | CPD | CPR | CPG | LSQ |LSD | LSR |
+// LPQ | LPD | LPR | LPG | ZTH | YTH | RX | GB | DCR |
+IF n<9 THEN
+	// Setting Measurement Point 1 Resistance1
+	c:=1;
+	GVL.PLC_Data[n].Measure_Type[c] 		:='RX';
+	GVL.PLC_Data[n].Measure_Reference[c]	:=680;
+	GVL.PLC_Data[n].Measure_Tolerance[c]	:=34;
+	// Setting Measurement Point 2 Capacitance1
+	c:=2;
+	GVL.PLC_Data[n].Measure_Type[c] 		:='CSQ';
+	GVL.PLC_Data[n].Measure_Reference[c]	:=2.2E-08;
+	GVL.PLC_Data[n].Measure_Tolerance[c]	:=2.2E-09;
+	// Setting Measurement Point 3 Resistance2
+	c:=3;
+	GVL.PLC_Data[n].Measure_Type[c] 		:='RX';
+	GVL.PLC_Data[n].Measure_Reference[c]	:=680;
+	GVL.PLC_Data[n].Measure_Tolerance[c]	:=34;
+		// Setting Measurement Point 3 Inductor 2
+	c:=4;
+	GVL.PLC_Data[n].Measure_Type[c] 		:='LPD';
+	GVL.PLC_Data[n].Measure_Reference[c]	:=5;
+	GVL.PLC_Data[n].Measure_Tolerance[c]	:=10;
+		// Setting Measurement Point 3 Resistor 1
+	c:=5;
+	GVL.PLC_Data[n].Measure_Type[c] 		:='LPD';
+	GVL.PLC_Data[n].Measure_Reference[c]	:=5;
+	GVL.PLC_Data[n].Measure_Tolerance[c]	:=10;
+		// Setting Measurement Point 3 Resistor 2
+	c:=6;
+	GVL.PLC_Data[n].Measure_Type[c] 		:='LPD';
+	GVL.PLC_Data[n].Measure_Reference[c]	:=5;
+	GVL.PLC_Data[n].Measure_Tolerance[c]	:=10;
+
+
+    n:=n+1;
+
+IF n=9 THEN
+	GVL.Measurement_Init:= TRUE;
+END_IF
+
+END_IF]]></ST>
+    </Implementation>
+    <LineIds Name="Initialize_Measurement_Values">
+      <LineId Id="5" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="30" Count="3" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="34" Count="3" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="45" Count="3" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="50" Count="3" />
+      <LineId Id="49" Count="0" />
+      <LineId Id="55" Count="3" />
+      <LineId Id="54" Count="0" />
+      <LineId Id="69" Count="0" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="70" Count="1" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="66" Count="0" />
+      <LineId Id="65" Count="0" />
+      <LineId Id="68" Count="0" />
+      <LineId Id="10" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

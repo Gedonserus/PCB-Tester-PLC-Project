@@ -1,0 +1,79 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://www.plcopen.org/xml/tc6_0200">
+  <fileHeader companyName="Beckhoff Automation GmbH" productName="TF6420 Database Server Query Analyser" productVersion="1.0.0.0" creationDateTime="2020-05-16T16:04:40" />
+  <contentHeader name="Untitled1" modificationDateTime="2020-05-16T16:04:40">
+    <coordinateInfo>
+      <fbd>
+        <scaling x="1" y="1" />
+      </fbd>
+      <ld>
+        <scaling x="1" y="1" />
+      </ld>
+      <sfc>
+        <scaling x="1" y="1" />
+      </sfc>
+    </coordinateInfo>
+    <addData>
+      <data name="http://www.3s-software.com/plcopenxml/projectinformation" handleUnknown="implementation">
+        <ProjectInformation />
+      </data>
+    </addData>
+  </contentHeader>
+  <types>
+    <dataTypes>
+      <dataType name="ST_SelectStruct">
+        <baseType>
+          <struct>
+            <variable name="PCB_Number">
+              <type>
+                <INT />
+              </type>
+            </variable>
+            <variable name="DateTime">
+              <type>
+                <DT />
+              </type>
+            </variable>
+            <variable name="Free_from_defects">
+              <type>
+                <string length="255" />
+              </type>
+            </variable>
+            <variable name="M_Point_1">
+              <type>
+                <string length="255" />
+              </type>
+            </variable>
+            <variable name="M_Point_1_result">
+              <type>
+                <LREAL />
+              </type>
+            </variable>
+            <variable name="M_Point_1_reference">
+              <type>
+                <DINT />
+              </type>
+            </variable>
+            <variable name="M_Point_1_toleracne">
+              <type>
+                <DINT />
+              </type>
+            </variable>
+          </struct>
+        </baseType>
+        <addData />
+      </dataType>
+    </dataTypes>
+    <pous />
+  </types>
+  <instances>
+    <configurations />
+  </instances>
+  <addData>
+    <data name="http://www.3s-software.com/plcopenxml/projectstructure" handleUnknown="discard">
+      <ProjectStructure>
+        <Object Name="ST_SelectStruct" />
+      </ProjectStructure>
+    </data>
+  </addData>
+</project>

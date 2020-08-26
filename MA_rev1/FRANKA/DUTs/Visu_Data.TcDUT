@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="Visu_Data" Id="{e51375c7-83fa-4f7d-ad39-e1ac3e179803}">
+    <Declaration><![CDATA[TYPE Visu_Data :
+STRUCT
+	PCB_Batch_ID	: 		INT;	
+	PCB_ID			: 		INT;
+	PCB_no_defects	:		STRING(50);
+	Measure1InTol	: 		STRING(50);
+	Measure2InTol	: 		STRING(50);
+	Measure3InTol	: 		STRING(50);		
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

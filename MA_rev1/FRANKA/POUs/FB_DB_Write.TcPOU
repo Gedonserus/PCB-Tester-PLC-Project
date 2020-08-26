@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="FB_DB_Write" Id="{432529c8-da57-4e06-a1eb-705a4271ac1c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_DB_Write
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	//State changer
+n_state: INT;
+
+//DB Write variables
+//stTable_structure: ST_SelectStruct;
+stTable_structure: test;
+fbPLCDBWritee	: FB_PLCDBWrite(sNetID:='', tTimeout:=T#5S);
+//arrColumns: ARRAY [0..6] OF STRING (50) := ['PCB_Number', 'DateTime',  'Free_from_defects', 'M_Point_1', 'M_Point_1_result', 'M_Point_1_reference', 'M_Point_1_toleracne'];
+arrColumns: ARRAY [0..1] OF STRING (50) := ['ID', 'Feld1'];
+
+//'SELECT [ID], [Feld1] FROM [Tabelle1]'
+ipTcResult: I_TcResultEvent;
+
+//DB Read variables
+
+fbPLCDBRead: FB_PLCDBRead(sNetID:='192.168.26.100.1.1', tTimeout:=T#5S);
+arrRecords: ARRAY [0..7] OF ST_SelectStruct;
+
+
+// state 200
+sSourcePath: STRING (255);
+sEventClasse: WSTRING(255);
+nEventID: Tc3_EventLogger.E_Severity;
+nEventText: WSTRING(255);
+
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[//stTable_structure.PCB_Number:=1;
+//stTable_structure.DateTime:= DT#2020-8-8-15:24:16;
+//stTable_structure.Free_from_defects:= 'Yes';
+//stTable_structure.M_Point_1:= 'Resistance';
+//stTable_structure.M_Point_1_reference:=20;
+//stTable_structure.M_Point_1_result:=24.5;
+//stTable_structure.M_Point_1_toleracne:=1;
+
+
+fbPLCDBWritee.WriteStruct(
+		hDBID:= 1,
+		sTableName:= 'Tabelle1',
+		pRecord:= ADR(stTable_structure),
+		cbRecord:= SIZEOF (stTable_structure),
+		pColumnNames:= ADR(arrColumns),
+		cbColumnNames:=SIZEOF(arrColumns));
+
+fbPLCDBRead.ReadStruct(
+	hDBID:= 1, 
+	sTableName:= 'Tabelle1', 
+	pColumnNames:= ADR(arrColumns), 
+	cbColumnNames:= SIZEOF(arrColumns), 
+	sOrderByColumn:= 'ID', 
+	eOrderType:= E_OrderType.ASC, 
+	nStartIndex:= 0, 
+	nRecordCount:= 20, 
+	pData:= ADR(arrRecords), 
+	cbData:=SIZEOF (arrRecords));
+
+				]]></ST>
+    </Implementation>
+    <LineIds Name="FB_DB_Write">
+      <LineId Id="111" Count="6" />
+      <LineId Id="80" Count="22" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

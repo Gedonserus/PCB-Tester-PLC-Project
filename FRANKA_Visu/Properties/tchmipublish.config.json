@@ -1,0 +1,30 @@
+﻿[
+  {
+    "isNew": false,
+    "profileName": "IPC",
+    "publishMode": "TcHmi",
+    "targetDirectory": "",
+    "server": "",
+    "sitePath": "",
+    "destinationUrl": "",
+    "passiveMode": true,
+    "savePassword": true,
+    "deleteAllFilesBeforePublish": false,
+    "deleteExtensionDataBeforePublish": false,
+    "abortOnErrors": true,
+    "userName": "",
+    "encryptedPassword": "",
+    "tcHmiServerHost": "CP-40E884",
+    "tcHmiServerPort": "1020",
+    "socketTimeout": "45",
+    "clientCertificateCN": "F367B34BD440D8954BE1B5BFB8EA544E",
+    "tcHmiUseTLS": true,
+    "useClientCertificate": false,
+    "tcHmiServerUserName": "__SystemAdministrator",
+    "encryptedTcHmiServerPassword": "+RDicmm3lY6QY7LnO2oXuQ==",
+    "tcHmiDestinationUrl": "https://CP-40E884:1020",
+    "publishConfiguration": "remote",
+    "tcHmiSavePassword": true,
+    "tcHmiIgnoreCertificateErrors": true
+  }
+]

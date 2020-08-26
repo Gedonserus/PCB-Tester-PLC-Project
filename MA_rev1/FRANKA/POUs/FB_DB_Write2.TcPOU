@@ -1,0 +1,120 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="FB_DB_Write" Id="{432529c8-da57-4e06-a1eb-705a4271ac1c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_DB_Write
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+
+//DB Write variables 1..8 without persistent
+stTable_structure: DB_Columns;
+fbPLCDBWrite	: FB_PLCDBWrite(sNetID:='', tTimeout:=T#5S);
+arrColumns: ARRAY [1..9] OF STRING (50) := [
+'PCB_Batch_ID',
+'PCB_ID',
+'Measurement_ID',
+'TimeStamp',
+'FreeFromDefects',
+'Measure_Type',
+'Measure_Result',
+'Measure_Reference',
+'Measure_Tolerance'];
+ipTcResult: I_TcResultEvent;
+
+//DB Read variables
+fbPLCDBRead: FB_PLCDBRead(sNetID:='', tTimeout:=T#5S);
+arrRecords: ARRAY [1..8] OF DB_Columns;
+
+// case 200
+			sSourcePath:  STRING(255);
+			sEventClasse :  WSTRING(255);
+			nEventID:  E_Severity;
+			nEventText :  WSTRING(255);
+
+// Current time
+
+
+
+
+
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// e_nums //elemente mit Namen ansprechen. 
+CASE GVL.write_state OF
+
+0: // IDl
+
+GVL.Writing_finished:= FALSE;
+GVL.write_state:=1;
+	;
+1:  //Write
+	fbPLCDBWrite.WriteStruct(
+		hDBID:= 1,
+		sTableName:= GVL.ActiveTable,
+		pRecord:= ADR(GVL.Data),
+		cbRecord:= SIZEOF (GVL.Data),		
+		pColumnNames:= ADR(arrColumns),
+		cbColumnNames:=SIZEOF(arrColumns));
+
+		IF NOT fbPLCDBWrite.bBusy THEN
+		ipTcResult:= fbPLCDBWrite.ipTcResultEvent;
+			IF NOT fbPLCDBWrite.bError THEN
+				GVL.write_state:=2;
+			ELSE
+				GVL.write_state:= 200;
+			END_IF
+		END_IF
+
+2:
+	fbPLCDBRead.ReadStruct(
+		hDBID:= 1, 
+		sTableName:= GVL.ActiveTable, 
+		pColumnNames:= ADR(arrColumns), 
+		cbColumnNames:= SIZEOF(arrColumns), 
+		sOrderByColumn:= 'ID', 
+		eOrderType:= E_OrderType.ASC, 
+		nStartIndex:= 0, 
+		nRecordCount:= 8, 
+		pData:= ADR(arrRecords), 
+		cbData:=SIZEOF (arrRecords));			
+		IF NOT fbPLCDBRead.bBusy THEN
+			ipTcResult:= fbPLCDBRead.ipTcResultEvent;
+			IF NOT fbPLCDBRead.bError THEN
+				GVL.write_state:=200;
+			ELSE
+				GVL.write_state:= 200;
+			END_IF
+		END_IF
+
+200: 	sSourcePath:=ipTcResult.SourcePath;
+		sEventClasse := ipTcResult.EventClassDisplayName;
+		nEventID:= ipTcresult.Severity;
+		nEventText := ipTcResult.Text;
+		GVL.write_state:=3;
+		
+3: 		GVL.Writing_finished:=TRUE;
+END_CASE				]]></ST>
+    </Implementation>
+    <LineIds Name="FB_DB_Write">
+      <LineId Id="385" Count="1" />
+      <LineId Id="268" Count="2" />
+      <LineId Id="425" Count="0" />
+      <LineId Id="467" Count="1" />
+      <LineId Id="271" Count="1" />
+      <LineId Id="223" Count="5" />
+      <LineId Id="217" Count="1" />
+      <LineId Id="273" Count="7" />
+      <LineId Id="334" Count="1" />
+      <LineId Id="359" Count="10" />
+      <LineId Id="372" Count="7" />
+      <LineId Id="219" Count="0" />
+      <LineId Id="281" Count="3" />
+      <LineId Id="464" Count="2" />
+      <LineId Id="222" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

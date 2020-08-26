@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="FB_NewTable" Id="{af222f83-74e3-4a7a-8bdf-c94ce4cb7166}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_NewTable
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+
+fbPLCDBCreate : FB_PLCDBCreate(sNetID := '', tTimeout := T#5S);
+ColumnInfo : ARRAY [0..8] OF ST_Table; // Worked with 0....7, before persistent
+MAX_DBCOLUMNS : UDINT := 255;
+
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[//Column settings
+ColumnInfo[0].sName := 'PCB_Batch_ID'; 		ColumnInfo[0].eType := E_ColumnType.Integer; 	ColumnInfo[0].nLength := 4; ColumnInfo[0].sProperty := 'IDENTITY(1,1)';
+ColumnInfo[1].sName := 'PCB_ID'; 			ColumnInfo[1].eType := E_ColumnType.Integer; 	ColumnInfo[1].nLength := 4;
+ColumnInfo[2].sName := 'Measurement_ID'; 	ColumnInfo[2].eType := E_ColumnType.Integer; 	ColumnInfo[2].nLength := 4;
+ColumnInfo[3].sName := 'TimeStamp'; 		ColumnInfo[3].eType := E_ColumnType.DateTime; 	ColumnInfo[3].nLength := 4;
+ColumnInfo[4].sName := 'FreeFromDefects'; 	ColumnInfo[4].eType := E_ColumnType.NVarChar; 	ColumnInfo[4].nLength := 50;
+ColumnInfo[5].sName := 'Measure_Type'; 		ColumnInfo[5].eType := E_ColumnType.NVarChar; 	ColumnInfo[5].nLength := 50;
+ColumnInfo[6].sName := 'Measure_Result'; 	ColumnInfo[6].eType := E_ColumnType.REAL_; 		ColumnInfo[6].nLength := 4;
+ColumnInfo[7].sName := 'Measure_Reference'; ColumnInfo[7].eType := E_ColumnType.REAL_; 		ColumnInfo[7].nLength := 4;
+ColumnInfo[8].sName := 'Measure_Tolerance'; ColumnInfo[8].eType := E_ColumnType.REAL_; 		ColumnInfo[8].nLength := 4;
+
+
+
+
+fbPLCDBCreate.Table(
+hDBID:= 1, 
+sTableName:= GVL.ActiveTable, 
+pTableCfg:= ADR(ColumnInfo), 
+cbTableCfg:= SIZEOF(ColumnInfo));
+
+]]></ST>
+    </Implementation>
+    <LineIds Name="FB_NewTable">
+      <LineId Id="42" Count="0" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="58" Count="0" />
+      <LineId Id="16" Count="1" />
+      <LineId Id="25" Count="1" />
+      <LineId Id="44" Count="1" />
+      <LineId Id="73" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="18" Count="4" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="23" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

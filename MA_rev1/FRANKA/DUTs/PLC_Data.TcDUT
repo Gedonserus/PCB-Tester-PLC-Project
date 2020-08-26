@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="PLC_Data" Id="{95f0dff6-2e95-4c65-87d6-14fa6f59a38a}">
+    <Declaration><![CDATA[TYPE PLC_Data :
+STRUCT
+	PCB_ID			: 	INT;
+	PCB_no_defects	:	STRING(50);
+	Measurement_ID	: 	ARRAY [1..6] OF INT;
+	TimeStamp		: 	ARRAY [1..6] OF DT;
+	MeasureInTol	: 	ARRAY [1..6] OF STRING(50);
+	Measure_Type	: 	ARRAY [1..6] OF STRING(50);
+	Measure_Result	: 	ARRAY [1..6] OF REAL;
+	Measure_Reference: 	ARRAY [1..6] OF REAL;
+	Measure_Tolerance: 	ARRAY [1..6] OF REAL;
+
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

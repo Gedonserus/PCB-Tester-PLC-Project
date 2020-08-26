@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <GVL Name="GVL_Persistent" Id="{1c3e328e-f603-4a6c-b1ff-033918966c31}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL PERSISTENT
+		PCB_Batch_ID			: INT;
+
+
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

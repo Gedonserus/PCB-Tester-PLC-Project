@@ -1,0 +1,685 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="MAIN" Id="{2a30b9d8-1355-45f8-afa5-d9af0254be3a}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+
+
+
+
+state : MS;
+
+NewTable 	: FB_NewTable;
+WriteDB		: FB_DB_Write;
+
+
+
+// current file time
+
+		fbSystemTime    : GETSYSTEMTIME;
+        timeAsFileTime  : T_FILETIME;
+        timeAsDT        : DT;
+// Measurement trigger
+		trig			: BOOL;
+
+		
+// Run Python script for measurement stuff
+		runpython		: BOOL:=TRUE;
+		Start_py_script : NT_StartProcess;
+		
+// Run Blockly & FRANKA Desk
+
+//        bStartscript 	: BOOL := TRUE;
+        bBusy 			: BOOL := FALSE;
+        Start_py_script1 : NT_StartProcess;
+		
+// IPC Shut Down
+		shutdown	:shutdown; 
+	
+// LED confirmation counter
+k: INT :=1;
+
+// Blink Funktion
+fbBlinker_grun		:	FB_Blinker;	
+fbBlinker_rot		:	FB_Blinker;
+fbBlinker_weis		:	FB_Blinker;
+green_init			:	BOOL;
+
+// Init_delay
+   Delay_startup		: TON;
+   Delay			: TON;
+   Start_init		: BOOL:=FALSE;
+   Delay_init		: BOOL;
+   
+	clear: INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[fbSystemTime( timeLoDW =>timeAsFileTime.dwLowDateTime , timeHiDW =>timeAsFileTime.dwHighDateTime );
+timeAsDT := FILETIME_TO_DT( timeAsFileTime );
+
+GVL_IO.FRANKA_Marker0 				REF= GVL.mb_Output_Coils[0];
+GVL_IO.FRANKA_home1	 				REF= GVL.mb_Output_Coils[1];
+GVL_IO.PCB_Marker2	 				REF= GVL.mb_Output_Coils[2];
+GVL_IO.FRANKA_MPoint_reached3		REF= GVL.mb_Output_Coils[3];
+GVL_IO.FRANKA_Measurement_finished4	REF= GVL.mb_Output_Coils[4];
+GVL_IO.FRANKA_PCB_Picked5			REF= GVL.mb_Output_Coils[5];
+GVL_IO.FRANKA_PCB_Placed6			REF= GVL.mb_Output_Coils[6];
+GVL_IO.FRANKA_ready_to_start		REF= GVL.mb_Output_Coils[7];
+GVL_IO.PLC_Measure_Finished0		REF= GVL.mb_Input_Coils[0];
+GVL_IO.PLC_confirm_PCB_placement1	REF= GVL.mb_Input_Coils[1];
+GVL_IO.PLC_Start_trigger			REF= GVL.mb_Input_Coils[2];
+
+shutdown(Trig:=GVL.Grau_Schalter);
+IF GVL.Stop_Schalter=TRUE THEN
+	state:=MS.Reset;
+END_IF
+
+
+GVL.Data.PCB_Batch_ID:= GVL_Persistent.PCB_Batch_ID;
+
+
+
+
+CASE state OF
+
+
+MS.Reset : 	
+			// Reset HMI
+				IF clear<9 THEN
+					GVL.Visu_Data[clear].PCB_Batch_ID:=0;
+					GVL.Visu_Data[clear].PCB_ID:=0;
+					GVL.Visu_Data[clear].PCB_no_defects:='';
+					GVL.Visu_Data[clear].Measure1InTol:='';
+					GVL.Visu_Data[clear].Measure2InTol:='';
+					GVL.Visu_Data[clear].Measure3InTol:='';
+					GVL.PLC_Data[clear].MeasureInTol[1]:='';
+					GVL.PLC_Data[clear].MeasureInTol[2]:='';
+					GVL.PLC_Data[clear].MeasureInTol[3]:='';					
+					clear:=clear+1;
+				END_IF
+
+			
+			// LEDs off
+				GVL.LED1:=FALSE;
+				GVL.LED2:=FALSE;
+				GVL.LED3:=FALSE;
+				GVL.LED4:=FALSE;
+				GVL.LED5:=FALSE;
+				GVL.LED6:=FALSE;
+				GVL.LED7:=FALSE;
+				GVL.LED8:=FALSE;
+			//
+            fbBlinker_weis(bStart:=TRUE , tPeriode:= T#1S, bBlinker=>GVL.Schalterlichtweis);
+			GVL.Schalterlichtgrun:=FALSE;
+			GVL.bStartBlockly := FALSE;
+			GVL.measure_n:=1;
+			GVL.pcb_n:=1;
+			Start_init:=FALSE;
+			GVL_IO.FRANKA_ready_to_start:=FALSE;
+			Delay(IN:=FALSE);
+			IF GVL.Grau_Schalter=TRUE THEN
+				state:= MS.Start;
+				// Batch ID Increment
+				GVL_Persistent.PCB_Batch_ID:=GVL_Persistent.PCB_Batch_ID+1;
+			END_IF
+			
+MS.Init_delay:
+				Delay_startup(IN:=TRUE, PT:= T#10S, Q=>Start_init, ET=>);
+				IF Start_init=TRUE THEN
+					Start_init:=FALSE;
+					state:=MS.Initialization;
+				END_IF
+
+MS.Initialization:
+
+			// LEDs off
+				GVL.LED1:=FALSE;
+				GVL.LED2:=FALSE;
+				GVL.LED3:=FALSE;
+				GVL.LED4:=FALSE;
+				GVL.LED5:=FALSE;
+				GVL.LED6:=FALSE;
+				GVL.LED7:=FALSE;
+				GVL.LED8:=FALSE;
+				
+
+				GVL.Schalterlichtweis:=TRUE;
+				GVL.schalterspannung:= TRUE;
+			// Initialize Blockly & FRANKA Desk
+					
+			    IF GVL.bStartBlockly = TRUE AND bBusy = FALSE THEN
+        			Start_py_script1(
+            		NETID := '',
+            		PATHSTR := 'blocklenium',
+            		DIRNAME := 'C:\Users\Administrator\Desktop',
+     				COMNDLINE := '--insecure-con --login-required -b PCB_Measure.url -u http://192.168.2.2/desk/',
+					//COMNDLINE := '--insecure-con --login-required -b PCB_Handling.url -u http://192.168.2.2/desk/',
+                	START := TRUE,
+            		BUSY => bBusy
+        			);
+       			 	GVL.bStartBlockly := FALSE;
+					//bBusy:= FALSE;
+    			END_IF
+			
+				
+				
+		// Initialize Measurement script
+		
+			IF runpython = TRUE THEN	
+				Start_py_script(NETID:='',
+				PATHSTR:= 'bkpads',
+				DIRNAME:= 'C:\Users\Administrator\Desktop\',
+				COMNDLINE:='-c COM4',
+				Start:=TRUE,
+				TMOUT:=T#1S);
+				runpython:=FALSE;
+			 END_IF		
+		
+
+//			IF runpython = TRUE THEN	
+//				Start_py_script(NETID:='',
+//				PATHSTR:= 'C:\Python38\python.exe',
+//				DIRNAME:= 'C:\Users\Administrator\Desktop\',
+//				COMNDLINE:='C:\Users\Administrator\Desktop\bkpads.py',
+//				Start:=TRUE,
+//				TMOUT:=T#1S);
+//				runpython:=FALSE;
+//			 END_IF
+			
+			// Initializes, settings for measurement
+			GVL.pcb_n:=1;
+			GVL.pcb_max:=8;
+			GVL.measure_n:=1;
+			GVL.measure_max:=3;
+			Initialize_Measurement_Values(); // Set Measurement references, tolerances & Types for measurement points on PCB
+			
+			IF GVL.Measurement_Init=TRUE THEN
+			Delay_init:=TRUE;
+			// Batch ID Increment
+			GVL_Persistent.PCB_Batch_ID:=GVL_Persistent.PCB_Batch_ID+1;
+			state:=MS.Start;
+			;
+			END_IF
+			
+			// Initialize table
+			GVL.ActiveTable:='PCB_Test_Results';
+			NewTable ();
+
+MS.Restart:
+
+			//
+			GVL.Schalterlichtgrun:=FALSE;
+			GVL.bStartBlockly := FALSE;
+			GVL.measure_n:=1;
+			GVL.pcb_n:=1;
+			Start_init:=FALSE;
+			Delay(IN:=FALSE);
+			fbBlinker_grun(bStart:=Start_init , tPeriode:= T#1S, bBlinker=>GVL.Schalterlichtgrun);
+			IF GVL.Start_Schalter= TRUE THEN			
+				GVL.LED1:=FALSE;
+				GVL.LED2:=FALSE;
+				GVL.LED3:=FALSE;
+				GVL.LED4:=FALSE;
+				GVL.LED5:=FALSE;
+				GVL.LED6:=FALSE;
+				GVL.LED7:=FALSE;
+				GVL.LED8:=FALSE;
+				state:=MS.Start;		
+			END_IF
+					
+			
+			
+			
+			
+			
+MS.Start :	
+			clear:=1;
+			GVL.bStartBlockly := TRUE;
+			Delay(IN:=Delay_init, PT:= T#30S, Q=>Start_init);
+			
+			IF Start_init = TRUE AND GVL_IO.FRANKA_ready_to_start=FALSE THEN
+				state:= MS.FRANKA_ERROR;
+			END_IF
+			
+		    fbBlinker_grun(bStart:=Start_init , tPeriode:= T#1S, bBlinker=>GVL.Schalterlichtgrun);
+			
+			
+			GVL.Schalterlichtrot:=TRUE;
+			IF GVL.Start_Schalter= TRUE THEN
+				GVL_IO.PLC_Start_trigger:= TRUE;
+			END_IF
+			
+			
+			IF GVL_IO.FRANKA_Marker0 = TRUE THEN 
+				GVL.Schalterlichtweis:= FALSE;
+				GVL_IO.PLC_Start_trigger:= FALSE;
+				fbBlinker_grun(bStart:=FALSE);
+				state:=MS.FRANKA_Pick_and_place_PCB;
+			ELSE ;
+			END_IF
+					
+				
+MS.FRANKA_Pick_and_place_PCB:
+
+				IF GVL.pcb_n<=GVL.pcb_max THEN
+					IF GVL_IO.FRANKA_PCB_Picked5 = TRUE THEN
+						GVL_IO.PLC_confirm_PCB_placement1:=FALSE;
+						state:=MS.FRANKA_Measure;
+					END_IF
+					ELSE;
+						// finish program and write report from database
+						state:=MS.Restart;
+				END_IF
+				
+MS.FRANKA_Measure: 			
+				IF GVL_IO.FRANKA_Measurement_finished4 = FALSE AND GVL_IO.FRANKA_MPoint_reached3 = TRUE THEN					
+						GVL.sMeas_type:=GVL.PLC_Data[GVL.pcb_n].Measure_Type[GVL.measure_n];	// set type  
+						IF  trig=FALSE THEN
+							GVL.bMeas_start:= TRUE; // Trigger Measurement
+							GVL_IO.PLC_Measure_Finished0:= FALSE;
+							trig:=TRUE;
+						END_IF
+						IF GVL.bMeas_ready =TRUE THEN
+							GVL.PLC_Data[GVL.pcb_n].Measure_Result[GVL.measure_n]:=GVL.rMeas_01;
+							//rMeas_02	: 	REAL;	// Measurement result 2
+							IF GVL.PLC_Data[GVL.pcb_n].Measure_Result[GVL.measure_n]<(GVL.PLC_Data[GVL.pcb_n].Measure_Reference[GVL.measure_n]+GVL.PLC_Data[GVL.pcb_n].Measure_Tolerance[GVL.measure_n]) AND GVL.PLC_Data[GVL.pcb_n].Measure_Result[GVL.measure_n]>(GVL.PLC_Data[GVL.pcb_n].Measure_Reference[GVL.measure_n]-GVL.PLC_Data[GVL.pcb_n].Measure_Tolerance[GVL.measure_n]) THEN
+								GVL.PLC_Data[GVL.pcb_n].MeasureInTol[GVL.measure_n]:= 'Yes';
+
+								ELSE
+								GVL.PLC_Data[GVL.pcb_n].MeasureInTol[GVL.measure_n]:= 'No'; // test LED's YES otherwise No
+								GVL.PLC_Data[GVL.pcb_n].PCB_no_defects:= 'defect';
+								GVL.Visu_Data[GVL.pcb_n].PCB_no_defects:='defect';
+							END_IF
+							
+							GVL_IO.PLC_Measure_Finished0:= TRUE;							
+							IF GVL_IO.FRANKA_Marker0 =TRUE THEN
+								state:=MS.DB_Write;
+							END_IF
+						END_IF
+				END_IF
+
+		
+MS.DB_Write:
+		// Visu Data
+		GVL.Visu_Data[GVL.pcb_n].PCB_Batch_ID:=GVL_Persistent.PCB_Batch_ID;
+		GVL.Visu_Data[GVL.pcb_n].PCB_ID:=GVL.pcb_n;
+		GVL.Visu_Data[GVL.pcb_n].Measure1InTol:=GVL.PLC_Data[GVL.pcb_n].MeasureInTol[1];
+		GVL.Visu_Data[GVL.pcb_n].Measure2InTol:=GVL.PLC_Data[GVL.pcb_n].MeasureInTol[2];
+		GVL.Visu_Data[GVL.pcb_n].Measure3InTol:=GVL.PLC_Data[GVL.pcb_n].MeasureInTol[3];
+		
+
+		GVL.Data.PCB_ID:=GVL.pcb_n;
+		GVL.Data.Measurement_ID:=GVL.measure_n;
+		GVL.Data.Measure_Type:=GVL.PLC_Data[GVL.pcb_n].Measure_Type[GVL.measure_n];
+		GVL.Data.TimeStamp:= timeASDT;
+		GVL.Data.FreeFromDefects:=GVL.PLC_Data[GVL.pcb_n].MeasureInTol[GVL.measure_n];
+		GVL.Data.Measure_Type:= GVL.PLC_Data[GVL.pcb_n].Measure_Type[GVL.measure_n];
+		GVL.Data.Measure_Result:= GVL.PLC_Data[GVL.pcb_n].Measure_Result[GVL.measure_n];
+		GVL.Data.Measure_Reference:= GVL.PLC_Data[GVL.pcb_n].Measure_Reference[GVL.measure_n];
+		GVL.Data.Measure_Tolerance:= GVL.PLC_Data[GVL.pcb_n].Measure_Tolerance[GVL.measure_n];
+		WriteDB ();
+		IF GVL.Writing_finished=TRUE THEN
+			GVL.write_state:=0;
+			GVL_IO.FRANKA_MPoint_reached3:=FALSE;
+			GVL.measure_n:=GVL.measure_n+1;
+			trig:=FALSE;
+			GVL.bMeas_ready:=FALSE;
+		END_IF
+																
+		IF GVL.measure_n=GVL.measure_max+1 AND GVL.Writing_finished=TRUE THEN
+			GVL_IO.PLC_Measure_Finished0:= FALSE;
+			GVL.measure_n:=1;
+			state:=MS.FRANKA_Place_PCB;	
+			ELSE
+			state:=MS.FRANKA_Measure;
+		END_IF
+
+				
+							
+MS.FRANKA_Place_PCB:
+				
+						IF GVL_IO.FRANKA_PCB_Placed6 = TRUE THEN
+							
+							GVL_IO.PLC_confirm_PCB_placement1:=TRUE;
+							state:=MS.LED_confirmation;
+							GVL_IO.FRANKA_PCB_Placed6:= FALSE;
+						END_IF
+
+MS.LED_confirmation:			
+				// No defects in PCB?
+				IF k<=GVL.measure_max THEN
+					IF GVL.PLC_Data[GVL.pcb_n].MeasureInTol[k]='No' THEN
+						GVL.pcb_n:=GVL.pcb_n+1;
+						k:=1;
+						state:=MS.FRANKA_Pick_and_place_PCB;			
+					ELSE
+						IF k=GVL.measure_max AND GVL.PLC_Data[GVL.pcb_n].MeasureInTol[k]='No' THEN
+							GVL.pcb_n:=GVL.pcb_n+1;
+							state:=MS.FRANKA_Pick_and_place_PCB;
+							ELSE
+							k:=k+1;
+						END_IF
+					END_IF
+				ELSE
+					CASE GVL.pcb_n OF
+						1: GVL.LED1:=TRUE;
+						   GVL.Visu_Data[1].PCB_no_defects:='Yes';
+						2: GVL.LED2:=TRUE;
+						   GVL.Visu_Data[2].PCB_no_defects:='Yes';
+						3: GVL.LED3:=TRUE;
+						   GVL.Visu_Data[3].PCB_no_defects:='Yes';
+						4: GVL.LED4:=TRUE;
+						   GVL.Visu_Data[4].PCB_no_defects:='Yes';
+						5: GVL.LED5:=TRUE;
+						   GVL.Visu_Data[5].PCB_no_defects:='Yes';
+						6: GVL.LED6:=TRUE;
+						   GVL.Visu_Data[6].PCB_no_defects:='Yes';
+						7: GVL.LED7:=TRUE;
+						   GVL.Visu_Data[7].PCB_no_defects:='Yes';
+						8: GVL.LED8:=TRUE;
+						   GVL.Visu_Data[8].PCB_no_defects:='Yes';
+					END_CASE
+						GVL.pcb_n:=GVL.pcb_n+1;
+						k:=1;
+						state:=MS.FRANKA_Pick_and_place_PCB;	
+				END_IF	
+
+	
+MS.FRANKA_ERROR:
+fbBlinker_rot(bStart:=TRUE , tPeriode:= T#0.2S, bBlinker=>GVL.Schalterlichtrot);
+fbBlinker_grun(bStart:=TRUE , tPeriode:= T#1S, bBlinker=>GVL.Schalterlichtgrun);
+fbBlinker_weis(bStart:=TRUE , tPeriode:= T#1S, bBlinker=>GVL.Schalterlichtweis);
+
+MS.measurebackup:
+				IF GVL_IO.FRANKA_Measurement_finished4 = FALSE AND GVL_IO.FRANKA_MPoint_reached3 = TRUE THEN					
+						GVL.sMeas_type:=GVL.PLC_Data[GVL.pcb_n].Measure_Type[GVL.measure_n];	// set type  
+						IF  trig=FALSE THEN
+							GVL.bMeas_start:= TRUE; // Trigger Measurement
+							GVL_IO.PLC_Measure_Finished0:= FALSE;
+							trig:=TRUE;
+						END_IF
+						IF GVL.bMeas_ready =TRUE THEN
+							GVL.PLC_Data[GVL.pcb_n].Measure_Result[GVL.measure_n]:=GVL.rMeas_01;
+							//rMeas_02	: 	REAL;	// Measurement result 2
+							IF GVL.PLC_Data[GVL.pcb_n].Measure_Result[GVL.measure_n]<(GVL.PLC_Data[GVL.pcb_n].Measure_Reference[GVL.measure_n]+GVL.PLC_Data[GVL.pcb_n].Measure_Tolerance[GVL.measure_n]) AND GVL.PLC_Data[GVL.pcb_n].Measure_Result[GVL.measure_n]>(GVL.PLC_Data[GVL.pcb_n].Measure_Reference[GVL.measure_n]-GVL.PLC_Data[GVL.pcb_n].Measure_Tolerance[GVL.measure_n]) THEN
+								GVL.PLC_Data[GVL.pcb_n].MeasureInTol[GVL.measure_n]:= 'Yes';
+
+								ELSE
+								GVL.PLC_Data[GVL.pcb_n].MeasureInTol[GVL.measure_n]:= 'No'; // test LED's YES otherwise No
+								GVL.PLC_Data[GVL.pcb_n].PCB_no_defects:= 'defect';
+							END_IF
+							
+							GVL_IO.PLC_Measure_Finished0:= TRUE;
+							
+							
+							IF GVL_IO.FRANKA_Marker0 =TRUE THEN
+								GVL_IO.FRANKA_MPoint_reached3:=FALSE;
+								GVL.measure_n:=GVL.measure_n+1;
+								trig:=FALSE;
+								GVL.bMeas_ready:=FALSE;
+								
+								
+								IF GVL.measure_n=GVL.measure_max+1 THEN
+									GVL_IO.PLC_Measure_Finished0:= FALSE;
+									GVL.measure_n:=1;
+									//state:=MS.FRANKA_Place_PCB;
+									state:=MS.FRANKA_Place_PCB;	
+								END_IF
+							END_IF
+						END_IF
+				END_IF
+
+
+				
+				
+//DB Write Backup
+				GVL.Data.PCB_ID:=GVL.pcb_n;
+				GVL.Data.Measurement_ID:=GVL.measure_n;
+				GVL.Data.Measure_Type:=GVL.PLC_Data[GVL.pcb_n].Measure_Type[GVL.measure_n];
+				GVL.Data.TimeStamp:= timeASDT;
+				GVL.Data.FreeFromDefects:='Yes';
+				GVL.Data.Measure_Type:= 'Resistance';
+				GVL.Data.Measure_Result:= 43.3;
+				GVL.Data.Measure_Reference:= 4.4;
+				GVL.Data.Measure_Tolerance:= 0.2;
+				WriteDB ();
+				IF GVL.Writing_finished=TRUE THEN
+				GVL.write_state:=0;
+				END_IF
+
+END_CASE
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+]]></ST>
+    </Implementation>
+    <LineIds Name="MAIN">
+      <LineId Id="854" Count="0" />
+      <LineId Id="852" Count="0" />
+      <LineId Id="1036" Count="0" />
+      <LineId Id="1033" Count="0" />
+      <LineId Id="1063" Count="1" />
+      <LineId Id="1119" Count="0" />
+      <LineId Id="1127" Count="0" />
+      <LineId Id="1323" Count="0" />
+      <LineId Id="1331" Count="0" />
+      <LineId Id="1895" Count="0" />
+      <LineId Id="1203" Count="0" />
+      <LineId Id="1332" Count="0" />
+      <LineId Id="853" Count="0" />
+      <LineId Id="1561" Count="0" />
+      <LineId Id="1554" Count="0" />
+      <LineId Id="1754" Count="2" />
+      <LineId Id="2241" Count="0" />
+      <LineId Id="1597" Count="0" />
+      <LineId Id="1849" Count="0" />
+      <LineId Id="2314" Count="0" />
+      <LineId Id="1555" Count="0" />
+      <LineId Id="1552" Count="0" />
+      <LineId Id="799" Count="0" />
+      <LineId Id="1125" Count="0" />
+      <LineId Id="1635" Count="0" />
+      <LineId Id="1638" Count="1" />
+      <LineId Id="2435" Count="1" />
+      <LineId Id="2441" Count="0" />
+      <LineId Id="2444" Count="1" />
+      <LineId Id="2442" Count="0" />
+      <LineId Id="2446" Count="1" />
+      <LineId Id="2500" Count="2" />
+      <LineId Id="2440" Count="0" />
+      <LineId Id="2438" Count="0" />
+      <LineId Id="2244" Count="0" />
+      <LineId Id="2242" Count="1" />
+      <LineId Id="1864" Count="6" />
+      <LineId Id="1859" Count="0" />
+      <LineId Id="1636" Count="0" />
+      <LineId Id="1846" Count="0" />
+      <LineId Id="1637" Count="0" />
+      <LineId Id="1872" Count="0" />
+      <LineId Id="1876" Count="1" />
+      <LineId Id="1890" Count="0" />
+      <LineId Id="1921" Count="0" />
+      <LineId Id="1892" Count="0" />
+      <LineId Id="1873" Count="1" />
+      <LineId Id="2367" Count="1" />
+      <LineId Id="1875" Count="0" />
+      <LineId Id="1878" Count="2" />
+      <LineId Id="1847" Count="0" />
+      <LineId Id="1888" Count="0" />
+      <LineId Id="1885" Count="1" />
+      <LineId Id="1509" Count="0" />
+      <LineId Id="1502" Count="0" />
+      <LineId Id="2245" Count="0" />
+      <LineId Id="1513" Count="0" />
+      <LineId Id="1703" Count="2" />
+      <LineId Id="1709" Count="4" />
+      <LineId Id="1706" Count="1" />
+      <LineId Id="1598" Count="0" />
+      <LineId Id="1515" Count="13" />
+      <LineId Id="1757" Count="0" />
+      <LineId Id="1529" Count="4" />
+      <LineId Id="1831" Count="0" />
+      <LineId Id="1838" Count="7" />
+      <LineId Id="1832" Count="2" />
+      <LineId Id="1535" Count="6" />
+      <LineId Id="1760" Count="0" />
+      <LineId Id="1543" Count="6" />
+      <LineId Id="1511" Count="0" />
+      <LineId Id="1550" Count="0" />
+      <LineId Id="1634" Count="0" />
+      <LineId Id="1891" Count="0" />
+      <LineId Id="2369" Count="1" />
+      <LineId Id="1551" Count="0" />
+      <LineId Id="1759" Count="0" />
+      <LineId Id="1510" Count="0" />
+      <LineId Id="1975" Count="1" />
+      <LineId Id="1978" Count="0" />
+      <LineId Id="1981" Count="0" />
+      <LineId Id="2166" Count="0" />
+      <LineId Id="1459" Count="0" />
+      <LineId Id="2180" Count="1" />
+      <LineId Id="2183" Count="4" />
+      <LineId Id="2189" Count="0" />
+      <LineId Id="2383" Count="0" />
+      <LineId Id="2371" Count="0" />
+      <LineId Id="2376" Count="6" />
+      <LineId Id="2375" Count="0" />
+      <LineId Id="2374" Count="0" />
+      <LineId Id="2373" Count="0" />
+      <LineId Id="2172" Count="0" />
+      <LineId Id="2167" Count="4" />
+      <LineId Id="778" Count="0" />
+      <LineId Id="1208" Count="0" />
+      <LineId Id="2443" Count="0" />
+      <LineId Id="1887" Count="0" />
+      <LineId Id="1916" Count="1" />
+      <LineId Id="1919" Count="1" />
+      <LineId Id="1918" Count="0" />
+      <LineId Id="1495" Count="0" />
+      <LineId Id="1897" Count="1" />
+      <LineId Id="1854" Count="0" />
+      <LineId Id="887" Count="0" />
+      <LineId Id="1498" Count="1" />
+      <LineId Id="1496" Count="1" />
+      <LineId Id="895" Count="0" />
+      <LineId Id="1503" Count="1" />
+      <LineId Id="1871" Count="0" />
+      <LineId Id="1032" Count="0" />
+      <LineId Id="1028" Count="0" />
+      <LineId Id="1030" Count="1" />
+      <LineId Id="896" Count="1" />
+      <LineId Id="1079" Count="0" />
+      <LineId Id="1077" Count="0" />
+      <LineId Id="1038" Count="0" />
+      <LineId Id="1067" Count="0" />
+      <LineId Id="1338" Count="0" />
+      <LineId Id="1066" Count="0" />
+      <LineId Id="1073" Count="0" />
+      <LineId Id="1075" Count="0" />
+      <LineId Id="1336" Count="0" />
+      <LineId Id="1062" Count="0" />
+      <LineId Id="906" Count="1" />
+      <LineId Id="1088" Count="0" />
+      <LineId Id="1181" Count="0" />
+      <LineId Id="1185" Count="0" />
+      <LineId Id="1252" Count="0" />
+      <LineId Id="1314" Count="0" />
+      <LineId Id="1254" Count="0" />
+      <LineId Id="1253" Count="0" />
+      <LineId Id="1248" Count="0" />
+      <LineId Id="1215" Count="0" />
+      <LineId Id="1209" Count="0" />
+      <LineId Id="1340" Count="0" />
+      <LineId Id="1344" Count="0" />
+      <LineId Id="1447" Count="0" />
+      <LineId Id="1346" Count="2" />
+      <LineId Id="2313" Count="0" />
+      <LineId Id="1345" Count="0" />
+      <LineId Id="1343" Count="0" />
+      <LineId Id="1221" Count="0" />
+      <LineId Id="1308" Count="0" />
+      <LineId Id="1318" Count="0" />
+      <LineId Id="1307" Count="0" />
+      <LineId Id="1322" Count="0" />
+      <LineId Id="1175" Count="0" />
+      <LineId Id="2136" Count="0" />
+      <LineId Id="2140" Count="0" />
+      <LineId Id="2137" Count="0" />
+      <LineId Id="2142" Count="0" />
+      <LineId Id="2300" Count="0" />
+      <LineId Id="2315" Count="0" />
+      <LineId Id="2301" Count="0" />
+      <LineId Id="2298" Count="0" />
+      <LineId Id="2302" Count="1" />
+      <LineId Id="2299" Count="0" />
+      <LineId Id="2297" Count="0" />
+      <LineId Id="2143" Count="22" />
+      <LineId Id="2138" Count="1" />
+      <LineId Id="1690" Count="1" />
+      <LineId Id="900" Count="0" />
+      <LineId Id="926" Count="0" />
+      <LineId Id="1672" Count="4" />
+      <LineId Id="1669" Count="1" />
+      <LineId Id="1761" Count="3" />
+      <LineId Id="1781" Count="0" />
+      <LineId Id="1785" Count="0" />
+      <LineId Id="1783" Count="0" />
+      <LineId Id="1766" Count="1" />
+      <LineId Id="1788" Count="0" />
+      <LineId Id="1792" Count="0" />
+      <LineId Id="1790" Count="1" />
+      <LineId Id="1789" Count="0" />
+      <LineId Id="1768" Count="3" />
+      <LineId Id="2304" Count="0" />
+      <LineId Id="1772" Count="0" />
+      <LineId Id="2305" Count="0" />
+      <LineId Id="1773" Count="0" />
+      <LineId Id="2306" Count="0" />
+      <LineId Id="1774" Count="0" />
+      <LineId Id="2307" Count="0" />
+      <LineId Id="1775" Count="0" />
+      <LineId Id="2308" Count="0" />
+      <LineId Id="1776" Count="0" />
+      <LineId Id="2309" Count="0" />
+      <LineId Id="1777" Count="0" />
+      <LineId Id="2311" Count="0" />
+      <LineId Id="1778" Count="0" />
+      <LineId Id="2312" Count="0" />
+      <LineId Id="1779" Count="0" />
+      <LineId Id="1782" Count="0" />
+      <LineId Id="1786" Count="0" />
+      <LineId Id="1784" Count="0" />
+      <LineId Id="1671" Count="0" />
+      <LineId Id="1329" Count="0" />
+      <LineId Id="1905" Count="1" />
+      <LineId Id="1909" Count="0" />
+      <LineId Id="1912" Count="1" />
+      <LineId Id="2059" Count="1" />
+      <LineId Id="2064" Count="35" />
+      <LineId Id="2061" Count="1" />
+      <LineId Id="2120" Count="0" />
+      <LineId Id="2063" Count="0" />
+      <LineId Id="2121" Count="1" />
+      <LineId Id="2124" Count="11" />
+      <LineId Id="2123" Count="0" />
+      <LineId Id="1908" Count="0" />
+      <LineId Id="771" Count="0" />
+      <LineId Id="603" Count="2" />
+      <LineId Id="613" Count="2" />
+      <LineId Id="653" Count="7" />
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
