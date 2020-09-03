@@ -20,7 +20,7 @@ WriteDB		: FB_DB_Write;
         timeAsFileTime  : T_FILETIME;
         timeAsDT        : DT;
 // Measurement trigger
-		trig			: BOOL;
+		trig			: BOOL:=FALSE;
 
 		
 // Run Python script for measurement stuff
@@ -41,6 +41,7 @@ k: INT :=1;
 
 // Blink Funktion
 fbBlinker_grun		:	FB_Blinker;	
+fbBlinker_grun1		:	FB_Blinker;	
 fbBlinker_rot		:	FB_Blinker;
 fbBlinker_weis		:	FB_Blinker;
 green_init			:	BOOL;
@@ -214,8 +215,8 @@ MS.Restart:
 			GVL.measure_n:=1;
 			GVL.pcb_n:=1;
 			Start_init:=FALSE;
-			Delay(IN:=FALSE);
-			fbBlinker_grun(bStart:=Start_init , tPeriode:= T#1S, bBlinker=>GVL.Schalterlichtgrun);
+			Delay(IN:=FALSE);			
+			fbBlinker_grun(bStart:=TRUE , tPeriode:= T#1S, bBlinker=>GVL.Schalterlichtgrun);
 			IF GVL.Start_Schalter= TRUE THEN			
 				GVL.LED1:=FALSE;
 				GVL.LED2:=FALSE;
@@ -225,7 +226,7 @@ MS.Restart:
 				GVL.LED6:=FALSE;
 				GVL.LED7:=FALSE;
 				GVL.LED8:=FALSE;
-				state:=MS.Start;		
+				state:=MS.Reset;		
 			END_IF
 					
 			

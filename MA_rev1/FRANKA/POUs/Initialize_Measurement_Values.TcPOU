@@ -21,7 +21,7 @@ IF n<9 THEN
 	GVL.PLC_Data[n].Measure_Tolerance[c]	:=34;
 	// Setting Measurement Point 2 Capacitance1
 	c:=2;
-	GVL.PLC_Data[n].Measure_Type[c] 		:='CSQ';
+	GVL.PLC_Data[n].Measure_Type[c] 		:='CPQ';
 	GVL.PLC_Data[n].Measure_Reference[c]	:=2.2E-08;
 	GVL.PLC_Data[n].Measure_Tolerance[c]	:=2.2E-09;
 	// Setting Measurement Point 3 Resistance2
